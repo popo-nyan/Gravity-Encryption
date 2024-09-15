@@ -3,7 +3,7 @@ Gravityは、ほぼ全てのリクエストにuwd,idfaというパラメータ�
 また、アカウントログイン、作成時にはpnum,addressに電話番号、メールアドレスを暗号化したデータを入れて送信しています。
 
 # 連絡先
-- Matrix: @qoo.nyan:usesarchbtw.lol
+- Matrix: @kounomiya:hackliberty.org
 
 # スクリーンショット
 メールアドレスでログイン
