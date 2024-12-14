@@ -1,1 +1,3 @@
 pycryptodome
+httpx
+cryptography
