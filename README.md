@@ -7,8 +7,8 @@ Gravityでは、ほぼすべてのリクエストにuwd（ユーザーID）やid
 具体的な実装については、[upload_feed.py](https://github.com/popo-nyan/Gravity-Encryption/blob/master/upload_feed.py)を参照してください。
 
 # 連絡先
-- Matrix: @kounomiya:hackliberty.org
 - Discord: popo.nyan
+- Email [kounomiya@tuta.io](mailto:kounomiya@tuta.io)
 
 # スクリーンショット
 メールアドレスでログイン
