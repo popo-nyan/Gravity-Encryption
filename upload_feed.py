@@ -1,12 +1,15 @@
 import time
 import json
+import uuid
+from pprint import pprint
+
 import httpx
 import base64
 import secrets
 import hashlib
 
 from Crypto.Cipher import AES
-from Crypto.Util.Padding import pad
+from Crypto.Util.Padding import pad, unpad
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -26,6 +29,10 @@ def zero_pad(plain_text, block_size):
     return padded_data
 
 
+def zero_unpad(padded_data):
+    return padded_data.rstrip(b"\x00")
+
+
 def encrypt(plain_data, key: str = "", encrypt_type: int = 1) -> str:
     if encrypt_type == 1:
         return base64.b64encode(
@@ -39,17 +46,35 @@ def encrypt(plain_data, key: str = "", encrypt_type: int = 1) -> str:
                 zero_pad(json.dumps(plain_data).encode(), 16)
             )
         ).decode()
+    elif encrypt_type == 3:
+        public_key = serialization.load_pem_public_key(
+            PUBLIC_KEY, backend=default_backend()
+        )
+        cipher_text = public_key.encrypt(
+            base64.b64encode(plain_data.encode()), padding.PKCS1v15()
+        )
+        return base64.b64encode(cipher_text).decode()
 
 
-def decrypt(data: str, key: str) -> str:
-    return (
-        AES.new(key=key.encode(), iv=key.encode(), mode=AES.MODE_CBC)
-        .decrypt(base64.b64decode(data))
-        .decode()
-    )
+def decrypt(cipher_text: str, key: str = "", decrypt_type: int = 1) -> str:
+    if decrypt_type == 1:
+        return unpad(
+            AES.new(key=KEY.encode(), iv=IV.encode(), mode=AES.MODE_CBC).decrypt(
+                base64.b64decode(cipher_text.encode())
+            ),
+            AES.block_size,
+        ).decode()
+    elif decrypt_type == 2:
+        return json.loads(
+            zero_unpad(
+                AES.new(key=key.encode(), iv=key.encode(), mode=AES.MODE_CBC).decrypt(
+                    base64.b64decode(cipher_text.encode())
+                )
+            ).decode()
+        )
 
 
-def generate_api_secret(timestamp: str) -> str:
+def generate_api_security(timestamp: str) -> str:
     return "KOjDJSavxhqM1Z" + str(int(timestamp) % T_SECRET) + "Xa6fucp2t0nFYdACe2d+Xxm"
 
 
@@ -61,18 +86,8 @@ def calculate_sign(payload: dict) -> str:
     return hashlib.md5(text.encode()).hexdigest()
 
 
-def rsa_encrypt(plain_text: str):
-    public_key = serialization.load_pem_public_key(
-        PUBLIC_KEY, backend=default_backend()
-    )
-    cipher_text = public_key.encrypt(
-        base64.b64encode(plain_text.encode()), padding.PKCS1v15()
-    )
-    return base64.b64encode(cipher_text).decode()
-
-
 def main():
-    uwd = ""
+    uwd = encrypt(str(uuid.uuid4()).upper())
     token = ""
     aes_key = secrets.token_hex(8)
     data = {
@@ -106,10 +121,8 @@ def main():
         "ts": str(int(time.time())),
     }
 
-    api_secret = generate_api_secret(data["ts"])
-    data["api_security"] = api_secret
-    sign = calculate_sign(data)
-    data["sign"] = sign
+    data["api_security"] = generate_api_security(data["ts"])
+    data["sign"] = calculate_sign(data)
     data.pop("api_security")
     data["secret_key"] = aes_key
 
@@ -117,7 +130,10 @@ def main():
         "https://api.gravity.place/gravity/feed/uploadFeedEncrypt",
         content=base64.b64encode(
             json.dumps(
-                {"data": encrypt(data, aes_key, 2), "key": rsa_encrypt(aes_key)}
+                {
+                    "data": encrypt(data, aes_key, encrypt_type=2),
+                    "key": encrypt(aes_key, encrypt_type=3),
+                }
             ).encode()
         ).decode(),
         headers={
@@ -128,6 +144,7 @@ def main():
         },
     )
     print(response.status_code, response.text)
+    pprint(decrypt(response.json()["data"], aes_key, 2))
 
 
 main()
