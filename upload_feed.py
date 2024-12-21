@@ -56,11 +56,11 @@ def encrypt(plain_data, key: str = "", encrypt_type: int = 1) -> str:
         return base64.b64encode(cipher_text).decode()
 
 
-def decrypt(cipher_text: str, key: str = "", decrypt_type: int = 1) -> str:
+def decrypt(cipher_data: str, key: str = "", decrypt_type: int = 1) -> str:
     if decrypt_type == 1:
         return unpad(
             AES.new(key=KEY.encode(), iv=IV.encode(), mode=AES.MODE_CBC).decrypt(
-                base64.b64decode(cipher_text.encode())
+                base64.b64decode(cipher_data.encode())
             ),
             AES.block_size,
         ).decode()
@@ -68,7 +68,7 @@ def decrypt(cipher_text: str, key: str = "", decrypt_type: int = 1) -> str:
         return json.loads(
             zero_unpad(
                 AES.new(key=key.encode(), iv=key.encode(), mode=AES.MODE_CBC).decrypt(
-                    base64.b64decode(cipher_text.encode())
+                    base64.b64decode(cipher_data.encode())
                 )
             ).decode()
         )
